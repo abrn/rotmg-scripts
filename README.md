@@ -1,5 +1,5 @@
 # rotmg-scripts
-misc badly written scripts for realm of the mad god
+misc badly written scripts for realm of the mad god  
 most python scripts require the `requests` library
 
 ## pack_claimer.py
