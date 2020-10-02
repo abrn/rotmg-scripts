@@ -128,12 +128,13 @@ for account in accounts:
         print(f"{bcolors.ENDC}")
         if chosenpacks == str(packamount):
             chosenpacks = 'all'
-    elif chosenpacks == 'all':
+    
+    if chosenpacks == 'all':
         print(f"\nClaiming all on {email}")
         for pack in freepacks:
             response = make_request(email, password, pack[1])
             parse_request(pack[0], response)
-    else:
+    elif chosenpacks is not None:
         if int(chosenpacks) > len(freepacks) or int(chosenpacks) < 0:
             print(f"{bcolors.FAIL}Invalid pack choice - try again{bcolors.ENDC}")
             sys.exit(0)
