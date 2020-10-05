@@ -8,6 +8,12 @@ interactive python script to claim certain or all available free packs with a gi
 
 `--file file.txt`&nbsp;&nbsp;&nbsp;&nbsp; *the account list to use with format email:password*  
 
+## reward_claimer.py
+
+python script to login to an account list and log the daily reward. this script *cannot* actually claim the items, just acknowledge that you logged in. by default it will look for `accounts.txt` but you can pass the below argument:  
+
+`--file file.txt`&nbsp;&nbsp;&nbsp;&nbsp; *the account list to use with format email:password*  
+
 
 ## mass_changer.py
 
