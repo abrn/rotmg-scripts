@@ -78,7 +78,7 @@ def get_access_token(email, password):
     })
 
     if req.text == "<Error>Internal error, please wait 5 minutes to try again!</Error>":
-        print(f"{bcolors.FAIL}ERROR: Rate limited while grabbing token.. waiting 5 minutes before retrying..{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}ERROR - Rate limited while grabbing token.. waiting 5 minutes before retrying..{bcolors.ENDC}")
         time.sleep(310)
         token = get_access_token(email, password)
         return token
@@ -99,10 +99,21 @@ def get_access_token(email, password):
             return None
 
 
+def do_login(token):
+    req = requests.post('https://realmofthemadgod.appspot.com/char/list?muledump=true', data={
+        'game_net': 'Unity',
+        'play_platform': 'Unity',
+        'game_net_user_id': '',
+        'do_login': 'true',
+        'accessToken': token
+    }, headers={
+        'User-Agent': 'UnityPlayer/2019.4.9f1 (UnityWebRequest/1.0, libcurl/7.52.0-DEV)',
+        'X-Unity-Version': '2019.4.9f1'
+    })
+
+
 def make_request(token, boxid):
     req = requests.post('https://realmofthemadgod.appspot.com/account/purchasePackage', data={
-        'guid': email,
-        'password': password,
         'boxId': boxid,
         'quantity': 1,
         'price': 0,
@@ -115,20 +126,26 @@ def make_request(token, boxid):
         'User-Agent': 'UnityPlayer/2019.4.9f1 (UnityWebRequest/1.0, libcurl/7.52.0-DEV)',
         'X-Unity-Version': '2019.4.9f1'
     })
+    if req.text == "'NoneType' object has no attribute 'put'":
+        print(f"{bcolors.WARNING}SUCCESS - Login required, logging in...")
+        do_login(token)
+        response = make_request(token, boxid)
+        return response
+
     return req.text
 
 
 def parse_request(packname, response):
     if response == '<Error>Account not found</Error>':
-        print(f"{bcolors.FAIL}ERROR: Incorrect username or password - {packname}{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}ERROR - Incorrect username or password - {packname}{bcolors.ENDC}")
     elif response == '<Error>MysteryBoxError.maxPurchase|0</Error>':
-        print(f"{bcolors.WARNING}ERROR: Pack is already claimed on this account - {packname}{bcolors.ENDC}")
+        print(f"{bcolors.WARNING}ERROR - Pack is already claimed on this account - {packname}{bcolors.ENDC}")  
     elif response[0:9] == '<Success>':
         print(f"{bcolors.OKGREEN}SUCCESS - {packname}{bcolors.ENDC}")
         global success
         success = success + 1
     else:
-        print(f"{bcolors.FAIL}ERROR: Failed to make request: {response}{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}ERROR - Failed to make request: {response}{bcolors.ENDC}")
 
 
 count = 0
@@ -150,7 +167,7 @@ for account in accounts:
     token = get_access_token(email, password)
 
     if token is None:
-        print(f"{bcolors.FAIL}Could not get token for account {email}.. incorrect username or password{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}ERROR - Could not get token for account {email}.. incorrect username or password{bcolors.ENDC}")
         continue
 
     if chosenpacks is None:
