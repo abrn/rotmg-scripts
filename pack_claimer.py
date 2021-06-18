@@ -2,6 +2,7 @@ import sys
 import requests
 import os
 import time
+import hashlib
 import xml.etree.ElementTree as ET
 
 os.system('color')
@@ -30,14 +31,11 @@ except FileNotFoundError:
     sys.exit(0)
 
 
-def get_free_packs(email, password):
+def get_free_packs(token):
     req = requests.post('https://realmofthemadgod.appspot.com/package/getPackages', data={
-        'guid': email,
-        'password': password,
         'language': 'en',
         'version': 0,
-        'guid': email,
-        'password': password,
+        'accessToken': token,
         'game_net': 'Unity',
         'play_platform': 'Unity',
         'game_net_user_id': ''
@@ -49,7 +47,7 @@ def get_free_packs(email, password):
         print(f"{bcolors.FAIL}Could not make a request to find free packs as the RotMG API is down - try again later{bcolors.ENDC}")
         sys.exit(0)
     if req.text == '<Error>Account not Found</Error>':
-        print(f"{bcolors.FAIL}Could not make a request to find free packs as your first account's details are invalid - replace the account and try again{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}Could not request the pack list as your first account's details are invalid - replace the account and try again{bcolors.ENDC}")
         sys.exit(0)
     
     root = ET.fromstring(req.text)
@@ -64,7 +62,44 @@ def get_free_packs(email, password):
     return freepacks
 
 
-def make_request(email, password, boxid):
+def get_access_token(email, password):
+    clientToken = hashlib.md5(email.encode('utf-8') + password.encode('utf-8'))
+
+    req = requests.post('https://realmofthemadgod.appspot.com/account/verify', data={
+        'game_net': 'Unity',
+        'play_platform': 'Unity',
+        'game_net_user_id': '',
+        'guid': email,
+        'password': password,
+        'clientToken': clientToken
+    }, headers={
+        'User-Agent': 'UnityPlayer/2019.4.9f1 (UnityWebRequest/1.0, libcurl/7.52.0-DEV)',
+        'X-Unity-Version': '2019.4.9f1'
+    })
+
+    if req.text == "<Error>Internal error, please wait 5 minutes to try again!</Error>":
+        print(f"{bcolors.FAIL}ERROR: Rate limited while grabbing token.. waiting 5 minutes before retrying..{bcolors.ENDC}")
+        time.sleep(310)
+        token = get_access_token(email, password)
+        return token
+
+    try:
+        root = ET.fromstring(req.text)
+    except:
+        return None
+
+    token = root.findall('AccessToken')
+    if token is None:
+        return None
+    else:
+        try:
+            token = token[0].text
+            return token
+        except IndexError:
+            return None
+
+
+def make_request(token, boxid):
     req = requests.post('https://realmofthemadgod.appspot.com/account/purchasePackage', data={
         'guid': email,
         'password': password,
@@ -72,8 +107,7 @@ def make_request(email, password, boxid):
         'quantity': 1,
         'price': 0,
         'currency': 0,
-        'guid': email,
-        'password': password,
+        'accessToken': token,
         'game_net': 'Unity',
         'play_platform': 'Unity',
         'game_net_user_id': ''
@@ -81,7 +115,6 @@ def make_request(email, password, boxid):
         'User-Agent': 'UnityPlayer/2019.4.9f1 (UnityWebRequest/1.0, libcurl/7.52.0-DEV)',
         'X-Unity-Version': '2019.4.9f1'
     })
-    time.sleep(0.1)
     return req.text
 
 
@@ -95,7 +128,7 @@ def parse_request(packname, response):
         global success
         success = success + 1
     else:
-        print(f"{bcolors.FAIL}ERROR: Failed to make request, try again later - {packname}{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}ERROR: Failed to make request: {response}{bcolors.ENDC}")
 
 
 count = 0
@@ -114,9 +147,14 @@ for account in accounts:
 
     email = account_info[0]
     password = account_info[1]
+    token = get_access_token(email, password)
+
+    if token is None:
+        print(f"{bcolors.FAIL}Could not get token for account {email}.. incorrect username or password{bcolors.ENDC}")
+        continue
 
     if chosenpacks is None:
-        freepacks = get_free_packs(email, password)
+        freepacks = get_free_packs(token)
         packamount = len(freepacks)
         print(f"{bcolors.OKGREEN}\nFound {packamount} available free packs:{bcolors.ENDC}\n")
 
@@ -130,17 +168,19 @@ for account in accounts:
             chosenpacks = 'all'
     
     if chosenpacks == 'all':
-        print(f"\nClaiming all on {email}")
+        print(f"\nClaiming all packs on {email}")
         for pack in freepacks:
-            response = make_request(email, password, pack[1])
+            response = make_request(token, pack[1])
             parse_request(pack[0], response)
+            time.sleep(5)
     elif chosenpacks is not None:
         if int(chosenpacks) > len(freepacks) or int(chosenpacks) < 0:
             print(f"{bcolors.FAIL}Invalid pack choice - try again{bcolors.ENDC}")
             sys.exit(0)
         print(f"\nClaiming on {email}")
-        response = make_request(email, password, freepacks[int(chosenpacks)][1])
+        response = make_request(token, freepacks[int(chosenpacks)][1])
         parse_request(freepacks[int(chosenpacks)][0], response)
+        time.sleep(5)
 
 
 print(f"\n{bcolors.OKGREEN}Successfuly claimed {str(success)} packs{bcolors.ENDC}")
