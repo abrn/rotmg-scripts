@@ -2,3 +2,4 @@
 *.accounts
 *.cache
 *.yml
+.vscode
