@@ -3,18 +3,16 @@ import requests
 import os
 import time
 
-os.system('color')
-class bcolors:
-    OKGREEN = '\033[92m'
-    OKBLUE = '\033[94m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+from lib.req import *
+from lib.log import color, log
 
-if len(sys.argv) >= 2 and sys.argv[1] == '--file':
+# switch os terminal color mode
+os.system('color')
+
+
+if len(sys.argv) >= 2 and sys.argv[1] == '-i' or sys.argv[1] == '--file':
     if len(sys.argv) < 3:
-        print('Please enter a filename to read e.g:\n\n python {} --file accountlist.txt'.format(sys.argv[0]))
+        log(f'enter a filename to read e.g:\n {color.WARN}python {sys.argv[0]} {sys.argv[1]} accounts.txt{color.EOF}', 'FILES', color.FAIL)
         sys.exit(0)
     else:
         filename = sys.argv[2]
@@ -22,41 +20,15 @@ else:
     filename = 'accounts.txt'
 
 try:
-    f = open(filename, 'r')
-    accounts = f.readlines()
+    file = open(filename, 'r')
+    accounts = file.readlines()
 except FileNotFoundError:
-    print(f"{bcolors.FAIL}Could not find the{bcolors.ENDC} {bcolors.OKBLUE}{filename}{bcolors.ENDC}{bcolors.FAIL} file{bcolors.ENDC}")
+    log('enter a filename to read e.g:\n\n python {} --file accountlist.txt'.format(sys.argv[0]), "FILES", color.FAIL)
+    print(f"{color.FAIL}Could not find the{color.EOF} {color.INFO}{filename}{color.EOF}{color.FAIL} file{color.EOF}")
     sys.exit(0)
 
 
-def do_login(email, password):
-    req = requests.post('https://realmofthemadgod.appspot.com/char/list', data={
-        'do_login': 'true',
-        'guid': email,
-        'password': password,
-        'game_net': 'Unity',
-        'play_platform': 'Unity',
-        'game_net_user_id': ''
-    }, headers={
-        'User-Agent': 'UnityPlayer/2019.4.9f1 (UnityWebRequest/1.0, libcurl/7.52.0-DEV)',
-        'X-Unity-Version': '2019.4.9f1'
-    })
-    if req.status_code != 200:
-        print(f"{bcolors.FAIL}Could not make the login request as the RotMG API is down - try again later{bcolors.ENDC}")
-        sys.exit(0)
-    return req.text
 
-def parse_request(response):
-    if response == '<Error>Account not found</Error>':
-        print(f"{bcolors.FAIL}ERROR: Incorrect username or password{bcolors.ENDC}")
-    elif response[0:6] == '<Chars':
-        print(f"{bcolors.OKGREEN}SUCCESS{bcolors.ENDC}")
-        global success
-        success = success + 1
-    elif response == '<Error>Internal error, please wait 5 minutes to try again!</Error>':
-        print(f"{bcolors.WARNING}ERROR: Your IP has been rate limited - try again in 5 minutes{bcolors.ENDC}")
-    else:
-        print(f"{bcolors.FAIL}ERROR: Failed to make request, try again later{bcolors.ENDC}")
 
 count = 0
 success = 0
@@ -65,8 +37,8 @@ for account in accounts:
     count = count + 1
     account_info = account.strip('\n').split(':')
     if len(account_info) != 2:
-        print(f"{bcolors.FAIL}Your accounts file is in the wrong format on line {str(count)}")
-        print(f"Each line should have format{bcolors.ENDC} {bcolors.OKBLUE}email@mail.com:password{bcolors.ENDC}")
+        print(f"{color.FAIL}Your accounts file is in the wrong format on line {str(count)}")
+        print(f"Each line should have format{color.EOF} {color.INFO}email@mail.com:password{color.EOF}")
         continue
 
     email = account_info[0]
@@ -76,5 +48,5 @@ for account in accounts:
     response = do_login(email, password)
     parse_request(response)
 
-print(f"\n{bcolors.OKGREEN}Successfuly logged in on {str(success)}/{str(count)} accounts{bcolors.ENDC}")
-print(f"\n{bcolors.FAIL}WARNING:{bcolors.ENDC} Your logins have been counted, but the items still need to be claimed ingame")
+print(f"\n{color.OK}Successfuly logged in on {str(success)}/{str(count)} accounts{color.EOF}")
+print(f"\n{color.FAIL}WARNING:{color.EOF} Your logins have been counted, but the items still need to be claimed ingame")
