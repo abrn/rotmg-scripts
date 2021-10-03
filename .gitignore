@@ -6,4 +6,5 @@
 *.rwt
 *.vault
 account-files
-.vscode
+.vscode/
+.idea/
