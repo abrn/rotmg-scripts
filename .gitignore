@@ -2,4 +2,8 @@
 *.accounts
 *.cache
 *.yml
+*.yaml
+*.rwt
+*.vault
+account-files
 .vscode

@@ -1,4 +1,4 @@
 [flake8]
-max-line-length=150
-max-complexity=10
-ignore = 
+max-line-length=200
+# F403: 'from .requests import *' used; unable to detect undefined namesflake8(F403)
+exclude=F403
